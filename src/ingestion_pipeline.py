@@ -81,46 +81,7 @@ class RustDocStorage:
 
             self.index = faiss.IndexIDMap(
                 base_index
-            )
-
-    # =============================================================
-    # JSONL
-    # =============================================================
-
-    def load_jsonl(self) -> List[Dict[str, Any]]:
-
-        records = []
-
-        with open(
-            self.jsonl_path,
-            "r",
-            encoding="utf-8"
-        ) as f:
-
-            for line_number, line in enumerate(f, 1):
-
-                line = line.strip()
-
-                if not line:
-                    continue
-
-                try:
-                    record = json.loads(line)
-
-                    records.append(record)
-
-                except json.JSONDecodeError as e:
-
-                    print(
-                        f"Skipping invalid JSON "
-                        f"at line {line_number}: {e}"
-                    )
-
-        print(
-            f"Loaded {len(records)} documentation records"
-        )
-
-        return records
+            ) 
 
     # =============================================================
     # Embedding text
