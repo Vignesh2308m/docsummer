@@ -44,53 +44,15 @@ class RustDocStorage:
         self.conn = sqlite3.connect(self.db_path)
         self.cursor = self.conn.cursor()
 
-        self._init_sqlite()
+        # Schema initialization is handled by the storage layer so
+        # ingestion can reuse an existing database without creating
+        # tables on its own.
 
         # ---------------------------------------------------------
         # FAISS
         # ---------------------------------------------------------
 
         self._init_faiss()
-
-    # =============================================================
-    # SQLite
-    # =============================================================
-
-    def _init_sqlite(self):
-
-        self.cursor.execute("""
-            CREATE TABLE IF NOT EXISTS rust_doc_chunks (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-
-                file TEXT NOT NULL,
-                library TEXT,
-                item TEXT,
-                kind TEXT,
-
-                definition TEXT,
-                description TEXT,
-                examples TEXT,
-
-                source_path TEXT
-            )
-        """)
-
-        # Full-text search
-        self.cursor.execute("""
-            CREATE VIRTUAL TABLE IF NOT EXISTS rust_doc_fts
-            USING fts5(
-                library,
-                item,
-                kind,
-                definition,
-                description,
-                examples,
-                content='rust_doc_chunks',
-                content_rowid='id'
-            )
-        """)
-
-        self.conn.commit()
 
     # =============================================================
     # FAISS
