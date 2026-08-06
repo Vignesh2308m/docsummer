@@ -4,6 +4,7 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 from typing import List, Dict, Any, Optional
+from ast_parser import RustASTChunker, RustASTChunk
 
 
 # =====================================================================
@@ -24,7 +25,7 @@ class RAGStorage:
         # 1. Load Embedding Model
         print(f"Loading embedder '{model_name}'...")
         self.embedder = SentenceTransformer(model_name)
-        self.dimension = self.embedder.get_sentence_embedding_dimension()
+        self.dimension = self.embedder.get_embedding_dimension()
 
         # 2. Setup SQLite Database with FTS5 Table
         self.conn = sqlite3.connect(self.db_path)
