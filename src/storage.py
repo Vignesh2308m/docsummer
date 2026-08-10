@@ -4,10 +4,12 @@ from pathlib import Path
 import numpy as np
 import faiss
 
+
 from .util import validate
+from .queries import CREATE_DOCUMENTS_TABLE
 
 @dataclass
-class SQLLiteConnection:
+class SQLiteConnection:
     conn: sqlite3.Connection
     db : Path
 
@@ -46,3 +48,37 @@ class FAISSStore:
 
     def __post_init__(self):
         validate(self)
+
+
+
+def init_database(
+    db: Path,
+    create_if_missing: bool = False
+) -> SQLiteConnection:
+
+    # Database does not exist
+    if not db.exists():
+
+        if not create_if_missing:
+            raise FileNotFoundError(
+                f"Database does not exist: {db}"
+            )
+
+        # Create parent directory if necessary
+        db.parent.mkdir(
+            parents=True,
+            exist_ok=True
+        )
+
+    conn = sqlite3.connect(db)
+
+    # Create tables only when creating a new database
+    if create_if_missing:
+        conn.execute(CREATE_DOCUMENTS_TABLE)
+
+        conn.commit()
+
+    return SQLiteConnection(
+        conn=conn,
+        db=db
+    )
