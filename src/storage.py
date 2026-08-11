@@ -86,7 +86,8 @@ def init_database(
 
 def insert_document(
     conn: SQLiteConnection,
-    document: RustDocument
+    document: RustDocument,
+    commit:bool = True
 ) -> None:
     conn.conn.execute(
         INSERT_RUST_DOCUMENTS, 
@@ -100,5 +101,78 @@ def insert_document(
             document.example,
         )
     )
+    if commit:
+        conn.conn.commit()
 
-    conn.conn.commit()
+def init_faiss(
+    config: FAISSIndexConfig,
+    create_if_missing: bool = False
+) -> FAISSStore:
+
+    path = Path(config.path)
+
+    if path.exists():
+        index = faiss.read_index(str(path))
+
+        # Restore search parameter
+        if isinstance(index, faiss.IndexHNSW):
+            index.hnsw.efSearch = config.ef_search
+
+        return FAISSStore(
+            index=index,
+            config=config
+        )
+
+    if not create_if_missing:
+        raise FileNotFoundError(
+            f"FAISS index does not exist: {path}"
+        )
+
+    path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    index = faiss.IndexHNSWFlat(
+        config.dimension,
+        config.m
+    )
+
+    index.hnsw.efConstruction = config.ef_construction
+    index.hnsw.efSearch = config.ef_search
+
+    faiss.write_index(
+        index,
+        str(path)
+    )
+
+    return FAISSStore(
+        index=index,
+        config=config
+    )
+
+def add_vector(
+    store: FAISSStore,
+    vector: np.ndarray
+) -> int:
+    vector = np.asarray(vector, dtype=np.float32)
+
+    if vector.ndim == 1:
+        vector = vector.reshape(1, -1)
+
+    if vector.shape[1] != store.config.dimension:
+        raise ValueError(
+            f"Expected dimension {store.config.dimension}, "
+            f"got {vector.shape[1]}"
+        )
+
+    start_id = store.index.ntotal
+
+    store.index.add(vector)
+
+    faiss.write_index(
+        store.index,
+        store.config.path
+    )
+
+    return start_id
