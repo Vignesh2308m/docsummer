@@ -11,3 +11,17 @@ CREATE_DOCUMENTS_TABLE = """
                 example TEXT
             )
 """
+
+
+INSERT_RUST_DOCUMENTS = """
+        INSERT INTO rust_documents (
+            id,
+            library,
+            item,
+            kind,
+            definition,
+            description,
+            example
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """

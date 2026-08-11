@@ -6,7 +6,7 @@ import faiss
 
 
 from .util import validate
-from .queries import CREATE_DOCUMENTS_TABLE
+from .queries import CREATE_DOCUMENTS_TABLE, INSERT_RUST_DOCUMENTS
 
 @dataclass
 class SQLiteConnection:
@@ -82,3 +82,23 @@ def init_database(
         conn=conn,
         db=db
     )
+
+
+def insert_document(
+    conn: SQLiteConnection,
+    document: RustDocument
+) -> None:
+    conn.conn.execute(
+        INSERT_RUST_DOCUMENTS, 
+        (
+            document.id,
+            document.library,
+            document.item,
+            document.kind,
+            document.definition,
+            document.description,
+            document.example,
+        )
+    )
+
+    conn.conn.commit()
