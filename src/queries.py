@@ -25,3 +25,16 @@ INSERT_RUST_DOCUMENTS = """
         )
         VALUES (?, ?, ?, ?, ?, ?, ?)
     """
+
+SEARCH_RUST_DOCUMENT="""
+            SELECT
+                id,
+                library,
+                item,
+                kind,
+                definition,
+                description,
+                example
+            FROM documents
+            WHERE id = ?
+            """
