@@ -18,13 +18,13 @@ class SQLiteConnection:
 
 @dataclass
 class RustDocument:
-    id : int
+    id : str
     library: str
     item : str
     kind : str
     definition : str
     description : str
-    example : str
+    example : list[str]
 
     def __post_init__(self):
         validate(self)
@@ -98,7 +98,7 @@ def insert_document(
             document.kind,
             document.definition,
             document.description,
-            document.example,
+            "".join(document.example),
         )
     )
     if commit:
