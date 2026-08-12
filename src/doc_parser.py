@@ -10,18 +10,10 @@ def parse_element(element: Tag) -> dict:
     if element.attrs:
         result["_attributes"] = dict(element.attrs)
 
-    # Direct text belonging to this element
-    text_parts = []
+    text = " ".join(element.get_text(" ", strip=True).split())
 
-    for child in element.children:
-        if not isinstance(child, Tag):
-            text = str(child).strip()
-
-            if text:
-                text_parts.append(text)
-
-    if text_parts:
-        result["_text"] = " ".join(text_parts)
+    if text:
+        result["_text"] = text
 
     # Child elements
     for child in element.children:

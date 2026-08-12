@@ -48,40 +48,24 @@ class RustDocumentBuilder:
         if not isinstance(node, dict):
             return
 
-        attributes = node.get(
-            "_attributes",
-            {},
-        )
-
-        classes = set(
-            attributes.get("class", [])
-        )
-
-        # ---------------------------------------------
-        # Rustdoc declaration
-        # ---------------------------------------------
-
-        if "item-decl" in classes:
-
-            document = self._build_item(
-                node,
-                library,
-                parent_item,
-            )
-
-            if document:
-                documents.append(document)
-
-                parent_item = document.item
-
-        # ---------------------------------------------
-        # Recurse
-        # ---------------------------------------------
-
         for key, value in node.items():
 
             if key.startswith("_"):
                 continue
+
+            if self._has_class(value, "item-decl"):
+
+                document = self._build_item(
+                    value,
+                    node,
+                    library,
+                    parent_item,
+                )
+
+                if document:
+                    documents.append(document)
+
+                    parent_item = document.item
 
             self._walk(
                 value,
@@ -93,13 +77,14 @@ class RustDocumentBuilder:
     def _build_item(
         self,
         node: dict,
+        container: dict,
         library: str,
         parent_item: str | None,
     ) -> RustDocument | None:
 
         definition = self._find_text(
             node,
-            "pre",
+            "code",
         )
 
         if not definition:
@@ -111,9 +96,13 @@ class RustDocumentBuilder:
         if not name:
             return None
 
-        description = self._description(node)
+        top_doc = self._find_class_node(container, "top-doc")
 
-        examples = self._examples(node)
+        scope = top_doc if top_doc is not None else container
+
+        description = self._description(scope)
+
+        examples = self._examples(scope)
 
         if parent_item and kind == "method":
             item = f"{parent_item}::{name}"
@@ -210,6 +199,69 @@ class RustDocumentBuilder:
                 )
 
     @staticmethod
+    def _has_class(
+        node,
+        class_name,
+    ) -> bool:
+
+        if isinstance(node, list):
+            return any(
+                RustDocumentBuilder._has_class(item, class_name)
+                for item in node
+            )
+
+        if not isinstance(node, dict):
+            return False
+
+        attributes = node.get(
+            "_attributes",
+            {},
+        )
+
+        classes = set(
+            attributes.get("class", [])
+        )
+
+        return class_name in classes
+
+    @staticmethod
+    def _find_class_node(
+        node,
+        class_name,
+    ):
+
+        if isinstance(node, list):
+            for item in node:
+                result = RustDocumentBuilder._find_class_node(
+                    item,
+                    class_name,
+                )
+
+                if result is not None:
+                    return result
+
+            return None
+
+        if not isinstance(node, dict):
+            return None
+
+        if RustDocumentBuilder._has_class(node, class_name):
+            return node
+
+        for key, value in node.items():
+
+            if not key.startswith("_"):
+                result = RustDocumentBuilder._find_class_node(
+                    value,
+                    class_name,
+                )
+
+                if result is not None:
+                    return result
+
+        return None
+
+    @staticmethod
     def _find_text(
         node,
         tag: str,
@@ -262,6 +314,8 @@ class RustDocumentBuilder:
         definition: str,
     ) -> str:
 
+        header = definition.split("{", 1)[0]
+
         for rust_kind, document_kind in {
             "fn": "function",
             "struct": "struct",
@@ -274,7 +328,7 @@ class RustDocumentBuilder:
             "macro": "macro",
         }.items():
 
-            if f" {rust_kind} " in definition:
+            if f" {rust_kind} " in header:
                 return document_kind
 
         return "item"
@@ -312,7 +366,19 @@ class RustDocumentBuilder:
         for i, token in enumerate(tokens):
 
             if token in keywords:
-                if i + 1 < len(tokens):
-                    return tokens[i + 1]
+                for candidate in tokens[i + 1:]:
+
+                    if candidate in keywords:
+                        continue
+
+                    name = ""
+
+                    for char in candidate:
+                        if char.isalnum() or char == "_":
+                            name += char
+                        else:
+                            break
+
+                    return name
 
         return ""
