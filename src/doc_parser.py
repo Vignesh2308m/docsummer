@@ -1,28 +1,16 @@
 from pathlib import Path
+
 from bs4 import BeautifulSoup
-import json
-import re
+
+from .ingestion import ParsedHTML
+from .storage import RustDocument
 
 
-# Your Rust documentation directory
-DOC_ROOT = Path(
-    r"C:\Users\Vickynila\.rustup\toolchains"
-    r"\stable-x86_64-pc-windows-msvc\share\doc\rust\html"
-)
-
-OUTPUT_FILE = "rust_std_docs.jsonl"
+def clean_text(text: str) -> str:
+    return " ".join(text.split()).strip()
 
 
-def clean_text(text):
-    """Clean whitespace while preserving readable text."""
-    text = text.replace("\xa0", " ")
-    text = re.sub(r"[ \t]+", " ", text)
-    text = re.sub(r"\n\s*\n+", "\n\n", text)
-    return text.strip()
-
-
-def get_code_blocks(element):
-    """Extract code examples from an HTML element."""
+def get_code_blocks(element) -> list[str]:
     examples = []
 
     for code in element.find_all("code"):
@@ -34,107 +22,102 @@ def get_code_blocks(element):
     return examples
 
 
-def find_definition(item_element):
-    """
-    rustdoc usually stores signatures in elements such as:
-        code
-        .item-info
-        .method
-        .associatedconstant
-        .structfield
-    """
-
-    # First try common rustdoc structures
+def find_definition(element) -> str:
     candidates = [
-        item_element.select_one(".item-info"),
-        item_element.select_one(".method"),
-        item_element.select_one(".associatedconstant"),
-        item_element.select_one(".associatedtype"),
-        item_element.select_one(".structfield"),
-        item_element.select_one(".trait-impl"),
+        element.select_one(".item-info"),
+        element.select_one(".method"),
+        element.select_one(".associatedconstant"),
+        element.select_one(".associatedtype"),
+        element.select_one(".structfield"),
+        element.select_one(".trait-impl"),
     ]
 
     for candidate in candidates:
         if candidate:
-            text = clean_text(candidate.get_text(" ", strip=True))
+            text = clean_text(
+                candidate.get_text(" ", strip=True)
+            )
+
             if text:
                 return text
 
-    # Fallback: first code block
-    code = item_element.find("code")
+    code = element.find("code")
 
     if code:
-        return clean_text(code.get_text(" ", strip=True))
+        return clean_text(
+            code.get_text(" ", strip=True)
+        )
 
     return ""
 
 
-def get_library(soup, file_path):
-    """
-    Try to determine the library/module represented by the page.
-    """
+def find_item_name(element) -> str:
+    candidates = [
+        ".fnname",
+        ".struct",
+        ".trait",
+        ".enum",
+        ".type",
+        ".method",
+    ]
 
-    # Rustdoc breadcrumb
-    breadcrumbs = soup.select(".breadcrumb")
+    for selector in candidates:
+        name_element = element.select_one(selector)
 
-    if breadcrumbs:
-        text = clean_text(
-            breadcrumbs[0].get_text(" ", strip=True)
+        if name_element:
+            name = clean_text(
+                name_element.get_text(" ", strip=True)
+            )
+
+            if name:
+                return name
+
+    heading = element.find(
+        ["h1", "h2", "h3", "h4", "h5"]
+    )
+
+    if heading:
+        return clean_text(
+            heading.get_text(" ", strip=True)
         )
-
-        if text:
-            return text
-
-    # Rustdoc sidebar/crate information
-    crate = soup.select_one(".crate")
-
-    if crate:
-        text = clean_text(crate.get_text(" ", strip=True))
-
-        if text:
-            return text
-
-    # Derive something from path
-    relative = file_path.relative_to(DOC_ROOT)
-
-    parts = list(relative.parts)
-
-    if parts:
-        return parts[0]
 
     return ""
 
 
-def extract_page(file_path):
-    """Extract documentation from one HTML page."""
+def find_description(element) -> str:
+    doc = (
+        element.select_one(".docblock")
+        or element.select_one(".docblock-short")
+    )
 
-    try:
-        html = file_path.read_text(
-            encoding="utf-8",
-            errors="ignore"
-        )
-    except Exception as e:
-        print(f"Could not read {file_path}: {e}")
-        return []
+    if not doc:
+        return ""
 
-    soup = BeautifulSoup(html, "lxml")
+    return doc.get_text(
+        "\n",
+        strip=True,
+    ).strip()
 
-    title = soup.find("title")
 
-    if title:
-        title = clean_text(title.get_text(" ", strip=True))
-    else:
-        title = file_path.stem
+def parse_html(
+    parsed_html: ParsedHTML,
+) -> list[RustDocument]:
 
-    library = get_library(soup, file_path)
+    soup = BeautifulSoup(
+        parsed_html.content,
+        "lxml",
+    )
 
-    records = []
+    library = parsed_html.metadata.get(
+        "library",
+        "",
+    )
 
-    # ---------------------------------------------------------
-    # Find documented items
-    # ---------------------------------------------------------
+    title = (
+        parsed_html.title
+        or parsed_html.path.stem
+    )
 
-    # Rustdoc commonly uses these classes for documented items.
     selectors = [
         ".item-decl",
         ".method",
@@ -152,13 +135,15 @@ def extract_page(file_path):
         ".macro",
     ]
 
-    found = set()
+    documents: list[RustDocument] = []
+    found: set[int] = set()
 
     for selector in selectors:
 
+        kind = selector.removeprefix(".")
+
         for element in soup.select(selector):
 
-            # Avoid processing same element multiple times
             element_id = id(element)
 
             if element_id in found:
@@ -166,157 +151,44 @@ def extract_page(file_path):
 
             found.add(element_id)
 
-            # Find name
-            name = ""
+            item = find_item_name(element)
 
-            # Rustdoc commonly has .fnname, .struct, .trait, etc.
-            name_element = (
-                element.select_one(".fnname")
-                or element.select_one(".struct")
-                or element.select_one(".trait")
-                or element.select_one(".enum")
-                or element.select_one(".type")
-                or element.select_one(".method")
-            )
-
-            if name_element:
-                name = clean_text(
-                    name_element.get_text(" ", strip=True)
-                )
-
-            # Fallback to heading
-            if not name:
-                heading = element.find(
-                    ["h1", "h2", "h3", "h4", "h5"]
-                )
-
-                if heading:
-                    name = clean_text(
-                        heading.get_text(" ", strip=True)
-                    )
-
-            # If still nothing, skip
-            if not name:
+            if not item:
                 continue
 
-            definition = find_definition(element)
-
-            description = ""
-
-            # Try documentation section
-            doc = (
-                element.select_one(".docblock")
-                or element.select_one(".docblock-short")
+            document = RustDocument(
+                id=f"{library}:{item}",
+                library=library,
+                item=item,
+                kind=kind,
+                definition=find_definition(element),
+                description=find_description(element),
+                example=get_code_blocks(element),
             )
 
-            if doc:
-                description = clean_text(
-                    doc.get_text("\n", strip=True)
-                )
+            documents.append(document)
 
-            examples = get_code_blocks(element)
+    if documents:
+        return documents
 
-            # Determine item type
-            kind = selector.replace(".", "")
+    doc = soup.select_one(".docblock")
 
-            relative_path = file_path.relative_to(
-                DOC_ROOT
-            )
+    description = ""
 
-            record = {
-                "file": str(relative_path).replace("\\", "/"),
-                "library": library,
-                "item": name,
-                "kind": kind,
-                "definition": definition,
-                "description": description,
-                "examples": examples,
-                "path": str(file_path)
-            }
+    if doc:
+        description = doc.get_text(
+            "\n",
+            strip=True,
+        ).strip()
 
-            records.append(record)
-
-    # ---------------------------------------------------------
-    # If no structured item was found, still save page
-    # ---------------------------------------------------------
-
-    if not records:
-
-        description = ""
-
-        # Try main documentation area
-        doc = soup.select_one(".docblock")
-
-        if doc:
-            description = clean_text(
-                doc.get_text("\n", strip=True)
-            )
-
-        examples = get_code_blocks(soup)
-
-        relative_path = file_path.relative_to(
-            DOC_ROOT
+    return [
+        RustDocument(
+            id=f"{library}:{title}",
+            library=library,
+            item=title,
+            kind="page",
+            definition="",
+            description=description,
+            example=get_code_blocks(soup),
         )
-
-        records.append({
-            "file": str(relative_path).replace("\\", "/"),
-            "library": library,
-            "item": title,
-            "kind": "page",
-            "definition": "",
-            "description": description,
-            "examples": examples,
-            "path": str(file_path)
-        })
-
-    return records
-
-
-def main():
-
-    if not DOC_ROOT.exists():
-        print("Documentation directory does not exist:")
-        print(DOC_ROOT)
-        return
-
-    html_files = list(DOC_ROOT.rglob("*.html"))
-
-    print(f"Found {len(html_files)} HTML files")
-
-    total_records = 0
-
-    with open(
-        OUTPUT_FILE,
-        "w",
-        encoding="utf-8"
-    ) as output:
-
-        for index, file_path in enumerate(html_files, 1):
-
-            print(
-                f"[{index}/{len(html_files)}] "
-                f"{file_path.relative_to(DOC_ROOT)}"
-            )
-
-            records = extract_page(file_path)
-
-            for record in records:
-
-                output.write(
-                    json.dumps(
-                        record,
-                        ensure_ascii=False
-                    )
-                    + "\n"
-                )
-
-                total_records += 1
-
-    print()
-    print("Finished.")
-    print(f"Records: {total_records}")
-    print(f"Output: {OUTPUT_FILE}")
-
-
-if __name__ == "__main__":
-    main()
+    ]
