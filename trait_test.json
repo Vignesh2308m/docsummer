@@ -1,0 +1,115 @@
+{
+    "title": [
+        "Trait Pattern Copy item path"
+    ],
+    "type": [
+        "Pattern"
+    ],
+    "source": [
+        {
+            "text": "Source",
+            "href": "../../../src/core/str/pattern.rs.html#99"
+        }
+    ],
+    "declaration": [
+        "pub trait Pattern: Sized {\n    type Searcher <'a>: Searcher <'a>;\n\n    // Required method\n    fn into_searcher (self, haystack: & str ) -> Self:: Searcher <'_>;\n\n    // Provided methods\n    fn is_contained_in (self, haystack: & str ) -> bool { ... } fn is_prefix_of (self, haystack: & str ) -> bool { ... } fn is_suffix_of <'a>(self, haystack: &'a str ) -> bool where Self:: Searcher <'a>: ReverseSearcher <'a> { ... } fn strip_prefix_of (self, haystack: & str ) -> Option <& str > { ... } fn strip_suffix_of <'a>(self, haystack: &'a str ) -> Option <&'a str > where Self:: Searcher <'a>: ReverseSearcher <'a> { ... } fn as_utf8_pattern (&self) -> Option < Utf8Pattern <'_>> { ... }\n}"
+    ],
+    "description": [
+        "A string pattern. A Pattern expresses that the implementing type\ncan be used as a string pattern for searching in a &str . For example, both 'a' and \"aa\" are patterns that\nwould match at index 1 in the string \"baaaab\" . The trait itself acts as a builder for an associated Searcher type, which does the actual work of finding\noccurrences of the pattern in a string. Depending on the type of the pattern, the behavior of methods like str::find and str::contains can change. The table below describes\nsome of those behaviors. Pattern type Match condition &str is substring char is contained in string &[char] any char in slice is contained in string F: FnMut(char) -> bool F returns true for a char in string &&str is substring &String is substring \u00a7 Examples // &str assert_eq! ( \"abaaa\" .find( \"ba\" ), Some ( 1 )); assert_eq! ( \"abaaa\" .find( \"bac\" ), None ); // char assert_eq! ( \"abaaa\" .find( 'a' ), Some ( 0 )); assert_eq! ( \"abaaa\" .find( 'b' ), Some ( 1 )); assert_eq! ( \"abaaa\" .find( 'c' ), None ); // &[char; N] assert_eq! ( \"ab\" .find( & [ 'b' , 'a' ]), Some ( 0 )); assert_eq! ( \"abaaa\" .find( & [ 'a' , 'z' ]), Some ( 0 )); assert_eq! ( \"abaaa\" .find( & [ 'c' , 'd' ]), None ); // &[char] assert_eq! ( \"ab\" .find( & [ 'b' , 'a' ][..]), Some ( 0 )); assert_eq! ( \"abaaa\" .find( & [ 'a' , 'z' ][..]), Some ( 0 )); assert_eq! ( \"abaaa\" .find( & [ 'c' , 'd' ][..]), None ); // FnMut(char) -> bool assert_eq! ( \"abcdef_z\" .find(|ch| ch > 'd' && ch < 'y' ), Some ( 4 )); assert_eq! ( \"abcddd_z\" .find(|ch| ch > 'd' && ch < 'y' ), None );"
+    ],
+    "required_methods": [
+        {
+            "name": "into_searcher",
+            "href": "#tymethod.into_searcher",
+            "signature": "fn into_searcher (self, haystack: & str ) -> Self:: Searcher <'_>",
+            "source": "../../../src/core/str/pattern.rs.html#105",
+            "description": null
+        }
+    ],
+    "provided_methods": [
+        {
+            "name": "is_contained_in",
+            "href": "#method.is_contained_in",
+            "signature": "fn is_contained_in (self, haystack: & str ) -> bool",
+            "source": "../../../src/core/str/pattern.rs.html#109",
+            "description": null
+        },
+        {
+            "name": "is_prefix_of",
+            "href": "#method.is_prefix_of",
+            "signature": "fn is_prefix_of (self, haystack: & str ) -> bool",
+            "source": "../../../src/core/str/pattern.rs.html#115",
+            "description": null
+        },
+        {
+            "name": "is_suffix_of",
+            "href": "#method.is_suffix_of",
+            "signature": "fn is_suffix_of <'a>(self, haystack: &'a str ) -> bool where\n    Self:: Searcher <'a>: ReverseSearcher <'a>,",
+            "source": "../../../src/core/str/pattern.rs.html#121-123",
+            "description": null
+        },
+        {
+            "name": "strip_prefix_of",
+            "href": "#method.strip_prefix_of",
+            "signature": "fn strip_prefix_of (self, haystack: & str ) -> Option <& str >",
+            "source": "../../../src/core/str/pattern.rs.html#130",
+            "description": null
+        },
+        {
+            "name": "strip_suffix_of",
+            "href": "#method.strip_suffix_of",
+            "signature": "fn strip_suffix_of <'a>(self, haystack: &'a str ) -> Option <&'a str > where\n    Self:: Searcher <'a>: ReverseSearcher <'a>,",
+            "source": "../../../src/core/str/pattern.rs.html#146-148",
+            "description": null
+        },
+        {
+            "name": "as_utf8_pattern",
+            "href": "#method.as_utf8_pattern",
+            "signature": "fn as_utf8_pattern (&self) -> Option < Utf8Pattern <'_>>",
+            "source": "../../../src/core/str/pattern.rs.html#165",
+            "description": null
+        }
+    ],
+    "implementors": [
+        {
+            "name": "impl Pattern for char",
+            "href": "#impl-Pattern-for-char",
+            "source": "../../../src/core/str/pattern.rs.html#560"
+        },
+        {
+            "name": "impl<'b> Pattern for &'b str",
+            "href": "#impl-Pattern-for-%26str",
+            "source": "../../../src/core/str/pattern.rs.html#971"
+        },
+        {
+            "name": "impl<'b> Pattern for &'b String",
+            "href": "#impl-Pattern-for-%26String",
+            "source": "../../../src/alloc/string.rs.html#2617-2659"
+        },
+        {
+            "name": "impl<'b> Pattern for &'b [ char ]",
+            "href": "#impl-Pattern-for-%26%5Bchar%5D",
+            "source": "../../../src/core/str/pattern.rs.html#892"
+        },
+        {
+            "name": "impl<'b, 'c> Pattern for &'c &'b str",
+            "href": "#impl-Pattern-for-%26%26str",
+            "source": "../../../src/core/str/pattern.rs.html#953"
+        },
+        {
+            "name": "impl<'b, const N: usize > Pattern for &'b [ char ; N ]",
+            "href": "#impl-Pattern-for-%26%5Bchar;+N%5D",
+            "source": "../../../src/core/str/pattern.rs.html#850"
+        },
+        {
+            "name": "impl<F> Pattern for F where\n    F: FnMut ( char ) -> bool ,",
+            "href": "#impl-Pattern-for-F",
+            "source": "../../../src/core/str/pattern.rs.html#941-943"
+        },
+        {
+            "name": "impl<const N: usize > Pattern for [ char ; N ]",
+            "href": "#impl-Pattern-for-%5Bchar;+N%5D",
+            "source": "../../../src/core/str/pattern.rs.html#828"
+        }
+    ]
+}
