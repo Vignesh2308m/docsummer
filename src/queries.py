@@ -1,40 +1,46 @@
 
+TRAIT_TABLE = """
+    CREATE TABLE traits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        declaration TEXT,
+        description TEXT,
+        source_href TEXT,
+        source_line INTEGER
+    );
+"""
 
-CREATE_DOCUMENTS_TABLE = """
-            CREATE TABLE IF NOT EXISTS rust_documents (
-                id TEXT PRIMARY KEY,
-                library TEXT NOT NULL,
-                item TEXT NOT NULL,
-                kind TEXT NOT NULL,
-                definition TEXT,
-                description TEXT,
-                example TEXT
-            )
+TRAIT_METHODS_TABLE = """
+    CREATE TABLE trait_methods (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trait_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('required', 'provided')),
+        href TEXT,
+        signature TEXT,
+        description TEXT,
+        source_href TEXT,
+        source_line INTEGER,
+
+        FOREIGN KEY (trait_id)
+            REFERENCES traits(id)
+            ON DELETE CASCADE
+    );
 """
 
 
-INSERT_RUST_DOCUMENTS = """
-        INSERT INTO rust_documents (
-            id,
-            library,
-            item,
-            kind,
-            definition,
-            description,
-            example
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    """
+TRAIT_IMPLEMENTORS_TABLE = """
+    CREATE TABLE trait_implementors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trait_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        href TEXT,
+        source_href TEXT,
+        source_line INTEGER,
 
-SEARCH_RUST_DOCUMENT="""
-            SELECT
-                id,
-                library,
-                item,
-                kind,
-                definition,
-                description,
-                example
-            FROM documents
-            WHERE id = ?
-            """
+        FOREIGN KEY (trait_id)
+            REFERENCES traits(id)
+            ON DELETE CASCADE
+    );
+"""
