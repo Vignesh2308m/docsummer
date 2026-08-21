@@ -36,15 +36,18 @@ def extract_html(html, config):
             for element in elements:
                 obj = {}
 
-                for field, selector in item["fields"].items():
+                for field, selector in item["fields"].items():           
+                    # Extract from a child element
                     selector, extract_type = selector.rsplit(":", 1)
 
                     child = element.select_one(selector)
 
                     if child is None:
                         obj[field] = None
+
                     elif extract_type == "text":
                         obj[field] = child.get_text(" ", strip=True)
+
                     elif extract_type == "href":
                         obj[field] = child.get("href")
 
