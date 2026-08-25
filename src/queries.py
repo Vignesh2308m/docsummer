@@ -44,3 +44,43 @@ TRAIT_IMPLEMENTORS_TABLE = """
             ON DELETE CASCADE
     );
 """
+
+
+TRAIT_INSERT = """
+    INSERT INTO traits (
+        name,
+        type,
+        declaration,
+        description,
+        source_href,
+        source_line
+    )
+    VALUES (?, ?, ?, ?, ?, ?)
+"""
+
+
+TRAIT_METHOD_INSERT = """
+    INSERT INTO trait_methods (
+        trait_id,
+        name,
+        kind,
+        href,
+        signature,
+        description,
+        source_href,
+        source_line
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+"""
+
+
+TRAIT_IMPLEMENTOR_INSERT = """
+    INSERT INTO trait_implementors (
+        trait_id,
+        name,
+        href,
+        source_href,
+        source_line
+    )
+    VALUES (?, ?, ?, ?, ?)
+"""
