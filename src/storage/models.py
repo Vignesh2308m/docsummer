@@ -9,8 +9,8 @@ class Trait:
     type: str
     declaration: Optional[str] = None
     description: Optional[str] = None
+    source_text: Optional[str] = None
     source_href: Optional[str] = None
-    source_line: Optional[int] = None
 
 
 @dataclass
@@ -22,8 +22,8 @@ class TraitMethod:
     href: Optional[str] = None
     signature: Optional[str] = None
     description: Optional[str] = None
+    source_text: Optional[str] = None
     source_href: Optional[str] = None
-    source_line: Optional[int] = None
 
 
 @dataclass
@@ -32,5 +32,5 @@ class TraitImplementor:
     trait_id: int
     name: str
     href: Optional[str] = None
+    source_text: Optional[str] = None
     source_href: Optional[str] = None
-    source_line: Optional[int] = None
