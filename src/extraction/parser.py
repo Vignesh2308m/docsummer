@@ -13,22 +13,22 @@ def extract_html(html, config):
         elements = soup.select(css)
 
         if how == "text":
-            result[key] = [
+            result[key] = " # ".join([
                 element.get_text(" ", strip=True)
                 for element in elements
-            ]
+            ])
 
         elif how == "href":
-            result[key] = [
+            result[key] = " # ".join([
                 element.get("href")
                 for element in elements
-            ]
+            ])
 
         elif how == "str-only":
-            result[key] = [
+            result[key] = " # ".join([
                 element.find(string=True, recursive=False)
                 for element in elements
-            ]
+            ])
 
         elif how == "element":
             objects = []
