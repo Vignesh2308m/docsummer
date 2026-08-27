@@ -30,27 +30,29 @@ TRAIT_TEMPLATE = [
   },
   {
     "key": "required_methods",
-    "css": "#required-methods + .methods .method",
+    "css": "#required-methods + .methods details.method-toggle",
     "how": "element",
+    "many": True,
     "fields": {
-        "name": "a.fn:text",
-        "href": "a.fn:href",
-        "signature": ".code-header:text",
-        "source": "a.src:href",
+        "name": "section.method a.fn:text",
+        "href": "section.method a.fn:href",
+        "signature": "section.method .code-header:text",
+        "source": "section.method a.src:href",
         "description": ".docblock:text"
-     }
+    }
   },
   {
-      "key": "provided_methods",
-      "css": "#provided-methods + .methods .method",
-      "how": "element",
-      "fields": {
-          "name": "a.fn:text",
-          "href": "a.fn:href",
-          "signature": ".code-header:text",
-          "source": "a.src:href",
-          "description": ".docblock:text"
-      }
+    "key": "provided_methods",
+    "css": "#provided-methods + .methods details.method-toggle",
+    "how": "element",
+    "many": True,
+    "fields": {
+        "name": "section.method a.fn:text",
+        "href": "section.method a.fn:href",
+        "signature": "section.method .code-header:text",
+        "source": "section.method a.src:href",
+        "description": ".docblock:text"
+    }
   },
   {
     "key": "implementors",
