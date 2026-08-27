@@ -1,7 +1,13 @@
 import sqlite3
 
-from src.storage.executor import create_table
-from src.storage.queries import TRAIT_TABLE, TRAIT_IMPLEMENTORS_TABLE, TRAIT_METHODS_TABLE
+from src.storage.executor import create_table, batch_insert
+from src.storage.queries import (
+    TRAIT_TABLE,
+    TRAIT_IMPLEMENTORS_TABLE, 
+    TRAIT_METHODS_TABLE,
+    TRAIT_INSERT,
+    TRAIT_METHOD_INSERT,
+    TRAIT_IMPLEMENTOR_INSERT)
 
 
 from src.templates.trait import TRAIT_TEMPLATE
@@ -31,10 +37,12 @@ def main():
     for i in trait_iter:
         with open(i,encoding="utf-8") as f:
             html = extract_html(f, TRAIT_TEMPLATE)
-            trait, trait_method, trait_implementor = trait_to_dataclasses(html) 
-            print(trait)
-            print(trait_method)
-            print(trait_implementor)
+            trait, trait_method, trait_implementor = trait_to_dataclasses(html)
+            print(trait) 
+            with sqlite3.connect(DBPATH) as conn:
+                batch_insert(conn, TRAIT_INSERT, [trait])
+                batch_insert(conn, TRAIT_METHOD_INSERT, trait_method)
+                batch_insert(conn, TRAIT_IMPLEMENTOR_INSERT, trait_implementor)
             break
     pass
 
