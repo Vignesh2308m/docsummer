@@ -15,6 +15,7 @@ def batch_insert(
     conn: sqlite3.Connection,
     query: str,
     items: Iterable[T],
+    id: int = 0
 ) -> None:
 
     items = list(items)
@@ -37,3 +38,26 @@ def batch_insert(
     )
 
     conn.executemany(query, values)
+
+def insert(
+    conn: sqlite3.Connection,
+    query: str,
+    item: T,
+) -> int:
+    if not is_dataclass(item):
+        raise TypeError("item must be a dataclass instance")
+
+    field_names = [
+        field.name
+        for field in fields(item)
+        if field.name != "id"
+    ]
+
+    values = tuple(
+        getattr(item, name)
+        for name in field_names
+    )
+
+    cursor = conn.execute(query, values)
+
+    return cursor.lastrowid
