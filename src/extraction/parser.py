@@ -1,92 +1,50 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
+from src.storage.models import Document
+from dataclasses import asdict
+import json
 
-
-def extract_html(html, config):
+def parse_html(html: str) -> Document:
     soup = BeautifulSoup(html, "html.parser")
-    result = {}
 
-    for item in config:
-        key = item["key"]
-        css = item["css"]
-        how = item["how"]
+    counter = 0
 
-        elements = soup.select(css)
+    def build_node(element: Tag) -> Document:
+        nonlocal counter
 
-        if how == "text":
-            result[key] = " # ".join([
-                element.get_text(" ", strip=True)
-                for element in elements
-            ])
+        counter += 1
 
-        elif how == "href":
-            result[key] = " # ".join([
-                element.get("href")
-                for element in elements
-            ])
+        # Direct text only, excluding children's text
+        content = element.get_text(" ", strip=True)
+        content = content.strip() if content else ""
 
-        elif how == "str-only":
-            result[key] = " # ".join([
-                element.find(string=True, recursive=False)
-                for element in elements
-            ])
+        node = Document(
+            id=counter,
+            html_tag=element.name,
+            html_id=element.get("id", ""),
+            html_class=" ".join(element.get("class", [])),
+            href=element.get("href", ""),
+            content=content,
+            child=[]
+        )
 
-        elif how == "element":
-            objects = []
+        for child in element.children:
+            if isinstance(child, Tag):
+                node.child.append(build_node(child))
 
-            for element in elements:
-                obj = {}
+        return node
 
-                for field, selector in item["fields"].items():           
-                    # Extract from a child element
-                    selector, extract_type = selector.rsplit(":", 1)
+    root = soup.find("html")
 
-                    child = element.select_one(selector)
+    if root is None:
+        raise ValueError("HTML document does not contain an <html> element")
 
-                    if child is None:
-                        obj[field] = None
+    return build_node(root)
 
-                    elif extract_type == "text":
-                        obj[field] = child.get_text(" ", strip=True)
-
-                    elif extract_type == "href":
-                        obj[field] = child.get("href")
-
-                objects.append(obj)
-
-            result[key] = objects
-
-    return result
-
-def coverage(html, document):
-    soup = BeautifulSoup(html, "lxml")
-
-    # All meaningful text in HTML
-    html_text = soup.select_one("#main-content").get_text(" ", strip=True)
-
-    # All text extracted into RustDocument
-    def collect(obj):
-        if isinstance(obj, str):
-            return [obj]
-        if isinstance(obj, list):
-            return sum((collect(x) for x in obj), [])
-        if hasattr(obj, "__dataclass_fields__"):
-            return sum(
-                (collect(getattr(obj, f)) for f in obj.__dataclass_fields__),
-                []
-            )
-        return []
-
-    extracted_text = " ".join(collect(document))
-
-    html_words = set(html_text.split())
-    extracted_words = set(extracted_text.split())
-
-    missing = html_words - extracted_words
-    matched = html_words & extracted_words
-
-    return {
-        "coverage": len(matched) / len(html_words) if html_words else 1,
-        "html_words": len(html_words),
-        "extracted_words": len(extracted_words),
-        "missing": sorted(missing)
-    }
+def save_document(document: Document, path: str) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(
+            asdict(document),
+            f,
+            indent=2,
+            ensure_ascii=False
+        )
