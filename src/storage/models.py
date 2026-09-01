@@ -1,36 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, List
 
 
 @dataclass
-class Trait:
-    id: Optional[int]
-    name: str
-    type: str
-    declaration: Optional[str] = None
-    description: Optional[str] = None
-    source_text: Optional[str] = None
-    source_href: Optional[str] = None
-
-
-@dataclass
-class TraitMethod:
-    id: Optional[int]
-    trait_id: int
-    name: str
-    kind: str  # "required" or "provided"
-    href: Optional[str] = None
-    signature: Optional[str] = None
-    description: Optional[str] = None
-    source_text: Optional[str] = None
-    source_href: Optional[str] = None
-
-
-@dataclass
-class TraitImplementor:
-    id: Optional[int]
-    trait_id: int
-    name: str
-    href: Optional[str] = None
-    source_text: Optional[str] = None
-    source_href: Optional[str] = None
+class Document:
+    id: int
+    html_tag: str
+    html_id: str
+    html_class: str
+    href: str
+    content: str
+    child: List[Document]
