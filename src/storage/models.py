@@ -7,9 +7,10 @@ from typing import Optional, List
 @dataclass
 class Document:
     id: int
+    parent: int
     html_tag: str
     html_id: str
     html_class: str
     href: str
     content: str
-    child: List[Document]
+    
