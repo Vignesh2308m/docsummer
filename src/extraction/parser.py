@@ -1,9 +1,10 @@
 from bs4 import BeautifulSoup, Tag
+from bs4.element import NavigableString
 from src.storage.models import Document
 from dataclasses import asdict
 import json
 
-def parse_html(html: str) -> list[Document]:
+def parse_html(html: str, root_tag: str = "html") -> list[Document]:
     soup = BeautifulSoup(html, "html.parser")
 
     counter = 0
@@ -15,6 +16,13 @@ def parse_html(html: str) -> list[Document]:
         counter += 1
         current_id = counter
 
+        # Only direct text, excluding child tags
+        content = " ".join(
+            text.strip()
+            for text in element.contents
+            if isinstance(text, NavigableString) and text.strip()
+        )
+
         node = Document(
             id=current_id,
             parent=parent,
@@ -22,7 +30,7 @@ def parse_html(html: str) -> list[Document]:
             html_id=element.get("id", ""),
             html_class=" ".join(element.get("class", [])),
             href=element.get("href", ""),
-            content=element.get_text(" ", strip=True)
+            content=content
         )
 
         documents.append(node)
@@ -31,7 +39,7 @@ def parse_html(html: str) -> list[Document]:
             if isinstance(child, Tag):
                 build_node(child, current_id)
 
-    root = soup.find("html")
+    root = soup.find(root_tag)
 
     if root is None:
         raise ValueError("HTML document does not contain an <html> element")
@@ -43,7 +51,7 @@ def parse_html(html: str) -> list[Document]:
 def save_document(document: Document, path: str) -> None:
     with open(path, "w", encoding="utf-8") as f:
         json.dump(
-            asdict(document),
+            [asdict(i) for i in document],
             f,
             indent=2,
             ensure_ascii=False
