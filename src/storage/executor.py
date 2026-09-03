@@ -29,7 +29,6 @@ def batch_insert(
     field_names = [
         field.name
         for field in fields(items[0])
-        if field.name != "id"
     ]
 
     values = (
