@@ -4,7 +4,7 @@ from src.storage.models import Document
 from dataclasses import asdict
 import json
 
-def parse_html(html: str, root_tag: str = "html") -> list[Document]:
+def parse_html(html: str, path: str, page_id: int, root_tag: str = "html") -> list[Document]:
     soup = BeautifulSoup(html, "html.parser")
 
     counter = 0
@@ -24,6 +24,8 @@ def parse_html(html: str, root_tag: str = "html") -> list[Document]:
         )
 
         node = Document(
+            path = path,
+            page_id=page_id,
             id=current_id,
             parent=parent,
             html_tag=element.name,
