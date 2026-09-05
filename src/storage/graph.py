@@ -144,10 +144,10 @@ def children(table, node_id):
 
 
 def ancestors(table, node_id, depth=None):
-    depth_condition = ""
+    depth_condition = "AND depth <= 1"
 
     if depth is not None:
-        depth_condition = f"WHERE depth <= {depth}"
+        depth_condition = f"AND depth <= {depth}"
 
     return f"""
     WITH RECURSIVE tree AS (
@@ -170,7 +170,7 @@ def ancestors(table, node_id, depth=None):
 
 
 def descendants(table, node_id, depth=None):
-    depth_condition = ""
+    depth_condition = "AND depth <= 1"
 
     if depth is not None:
         depth_condition = f"AND depth <= {depth}"
