@@ -82,7 +82,7 @@ TAG_ROLES = {
 }
 
 ID_RELATIONS = {
-    "equals": {
+    "equals":{
         # Page structure
         "main-content": "MAIN_CONTENT",
         "copy-path": "COPY_PATH",
@@ -144,7 +144,7 @@ CLASS_ROLES = {
         "section-header": "SECTION_HEADER",
         "item-table": "ITEM_TABLE",
         "item-info": "ITEM_INFO",
-        "item-decl": "ITEM_DECLARATION",
+        "rust item-decl": "ITEM_DECLARATION",
         "impl-items": "IMPLEMENTATION_ITEMS",
         "methods": "METHODS",
 
@@ -156,9 +156,9 @@ CLASS_ROLES = {
 
         # Implementation
         "impl": "IMPLEMENTATION",
-        "trait-implementation": "TRAIT_IMPLEMENTATION",
-        "synthetic-implementation": "SYNTHETIC_IMPLEMENTATION",
-        "blanket-implementation": "BLANKET_IMPLEMENTATION",
+        "block trait-implementation": "TRAIT_IMPLEMENTATION",
+        "block synthetic-implementation": "SYNTHETIC_IMPLEMENTATION",
+        "block blanket-implementation": "BLANKET_IMPLEMENTATION",
         "negative-marker": "NEGATIVE_IMPLEMENTATION",
 
         # Code
@@ -179,10 +179,9 @@ CLASS_ROLES = {
 
         # Metadata
         "since": "VERSION",
-        "stab": "STABILITY",
-        "deprecated": "DEPRECATED",
-        "unstable": "UNSTABLE",
-        "portability": "PORTABILITY",
+        "stab deprecated": "DEPRECATED",
+        "stab unstable": "UNSTABLE",
+        "stab portability": "PORTABILITY",
 
         # UI / containers
         "content": "CONTAINER",
