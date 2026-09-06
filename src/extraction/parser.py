@@ -9,9 +9,14 @@ from src.storage.models import Document, Relations
 
 def parse_relation(docs:list[Document], config: dict, field: str)->list[Relations]:
     relations = []
+    equals = config.get("equals", {})
+    startswith = config.get("startswith", {})
     for doc in docs:
-        col:str = getattr(doc, field)
-        rel = config["equals"].get(col) 
+        col = getattr(doc, field, None)
+        if not col:
+            continue
+        # Exact match
+        rel = equals.get(col)
         if rel:
             relations.append(
                 Relations(
@@ -22,19 +27,21 @@ def parse_relation(docs:list[Document], config: dict, field: str)->list[Relation
                     relation=rel
                 )
             )
-        else:
-            for i, j in enumerate(config["startswith"]):
-                if col.startswith(i):
-                    relations.append(
-                        Relations(
-                            path=doc.path,
-                            page_id=doc.page_id,
-                            source_id=doc.parent,
-                            target_id=doc.id,
-                            relation=j
-                        )
+            continue
+
+        # Prefix match
+        for prefix, relation in startswith.items():
+            if col.startswith(prefix):
+                relations.append(
+                    Relations(
+                        path=doc.path,
+                        page_id=doc.page_id,
+                        source_id=doc.parent,
+                        target_id=doc.id,
+                        relation=relation
                     )
-                    break
+                )
+                break
     return relations
         
 def parse_html(html: str, path: str, page_id: int, root_tag: str = "html") -> list[Document]:
