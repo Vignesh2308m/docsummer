@@ -245,6 +245,68 @@ def count(table):
     FROM {table}
     """
 
+
+def path_to(
+    table,
+    relation_table,
+    source_query,
+    key,
+    value,
+    max_depth=None
+):
+    depth_condition = ""
+
+    if max_depth is not None:
+        depth_condition = f"""
+        WHERE p.depth <= {max_depth}
+        """
+
+    return f"""
+    path_tree AS (
+        SELECT
+            n.id AS node_id,
+            n.id AS source_id,
+            0 AS depth,
+            CAST(n.id AS TEXT) AS path
+        FROM {table} n
+        WHERE n.id IN (
+            SELECT id
+            FROM {source_query}
+        )
+
+        UNION ALL
+
+        SELECT
+            target.id AS node_id,
+            p.source_id,
+            p.depth + 1,
+            p.path || ' -> ' || target.id
+        FROM path_tree p
+        JOIN {relation_table} r
+            ON r.source_id = p.node_id
+        JOIN {table} target
+            ON target.id = r.target_id
+        WHERE p.depth < {max_depth if max_depth is not None else 100}
+    ),
+
+    target_nodes AS (
+        SELECT id
+        FROM {table}
+        WHERE {key} LIKE '%{value}%'
+    )
+
+    SELECT
+        p.source_id,
+        p.node_id AS target_id,
+        p.depth,
+        p.path
+    FROM path_tree p
+    JOIN target_nodes t
+        ON p.node_id = t.id
+    {depth_condition}
+    ORDER BY p.depth
+    """
+
 def build_graph(steps, table="documents", relation_table="relations"):
     ctes = []
     current = None
