@@ -33,7 +33,7 @@ DOCUMENT_INSERT = """
 """
 
 RELATION_INSERT = """
-        INSERT INTO documents (
+        INSERT INTO relations (
             path, page_id,
             source_id, target_id,
             relation
